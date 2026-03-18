@@ -293,9 +293,9 @@ input[type="file"]{display:none;}
               <button class="btn btn-ghost btn-sm" onclick="pickFiles('before')" id="t-add-ph">+ Add</button>
             </div>
             <div class="panel-body">
-              <div class="dropzone" id="dz-before" onclick="pickFiles('before')">
-                <div class="dz-icon">📁</div>
-                <div class="dz-text" id="t-dz-text">Tap to add photos • GPS auto-tagged</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                <button class="btn btn-primary btn-full" onclick="openCamera('before')" style="font-size:13px;padding:12px;">📸 Camera</button>
+                <button class="btn btn-ghost btn-full" onclick="pickFiles('before')" style="font-size:13px;padding:12px;">🖼️ Gallery</button>
               </div>
               <div class="pgrid" id="grid-before"></div>
             </div>
@@ -303,12 +303,11 @@ input[type="file"]{display:none;}
           <div class="panel panel-after">
             <div class="panel-hdr">
               <div><div class="panel-label" id="t-after-lbl">📷 After Work</div><div id="ac-count" style="font-size:11px;color:var(--muted);">0 photos</div></div>
-              <button class="btn btn-ghost btn-sm" onclick="pickFiles('after')" id="t-add-ph2">+ Add</button>
             </div>
             <div class="panel-body">
-              <div class="dropzone" id="dz-after" onclick="pickFiles('after')">
-                <div class="dz-icon">📁</div>
-                <div class="dz-text" id="t-dz-text2">Tap to add photos • GPS auto-tagged</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                <button class="btn btn-green btn-full" onclick="openCamera('after')" style="font-size:13px;padding:12px;">📸 Camera</button>
+                <button class="btn btn-ghost btn-full" onclick="pickFiles('after')" style="font-size:13px;padding:12px;">🖼️ Gallery</button>
               </div>
               <div class="pgrid" id="grid-after"></div>
             </div>
@@ -418,7 +417,8 @@ input[type="file"]{display:none;}
   </div>
 </div>
 
-<input type="file" id="finput" multiple accept="image/*,video/*" onchange="onFilePick(event)">
+<input type="file" id="finput" multiple accept="image/*,video/*" onchange="onFilePick(event)" style="display:none">
+<input type="file" id="camerainput" accept="image/*" capture="environment" onchange="onFilePick(event)" style="display:none">
 
 <script>
 // ============================================================
@@ -985,6 +985,7 @@ function switchTab(tab){
 // FILE UPLOAD
 // ============================================================
 function pickFiles(type){ upType=type; doc('finput').click(); }
+function openCamera(type){ upType=type; doc('camerainput').click(); }
 async function onFilePick(e){
   const files=Array.from(e.target.files); if(!files.length) return;
   await uploadPhotos(files,upType); e.target.value='';
