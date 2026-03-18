@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MSCB FieldPhoto Manager v2</title>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0d14;--surface:#13161f;--surface2:#1b1f2e;--border:#252a3d;
+  --accent:#f97316;--accent-dim:rgba(249,115,22,.13);
+  --green:#22c55e;--green-dim:rgba(34,197,94,.13);
+  --blue:#3b82f6;--blue-dim:rgba(59,130,246,.13);
+  --red:#ef4444;--muted:#64748b;--text:#e2e8f0;
+  --fh:'Rajdhani',sans-serif;--fm:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;font-size:14px;-webkit-tap-highlight-color:transparent;}
+#app{min-height:100vh;display:flex;flex-direction:column;}
+.splash{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(249,115,22,.14),transparent);}
+.splash-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:36px 32px;max-width:480px;width:100%;text-align:center;}
+.splash-logo{font-family:var(--fh);font-size:42px;font-weight:700;color:var(--accent);line-height:1;}
+.splash-sub{font-family:var(--fh);font-size:19px;color:var(--text);margin:4px 0 6px;}
+.splash-desc{font-size:12px;color:var(--muted);margin-bottom:28px;line-height:1.6;}
+.steps{background:var(--bg);border-radius:10px;padding:16px;text-align:left;margin-bottom:20px;}
+.steps-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
+.step{display:flex;gap:10px;margin-bottom:9px;font-size:12.5px;color:var(--muted);line-height:1.5;}
+.step-n{min-width:20px;height:20px;border-radius:50%;background:var(--accent-dim);color:var(--accent);
+  font-family:var(--fm);font-size:10px;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.step strong{color:var(--text);}
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:0 14px;
+  height:54px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;}
+.hdr-logo{font-family:var(--fh);font-size:20px;font-weight:700;color:var(--accent);letter-spacing:.5px;}
+.hdr-logo span{color:var(--text);}
+.hdr-right{display:flex;align-items:center;gap:6px;}
+.user-email{font-size:11px;color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.main{flex:1;padding:16px;max-width:960px;margin:0 auto;width:100%;}
+.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;
+  font-weight:500;transition:all .18s;display:inline-flex;align-items:center;gap:6px;outline:none;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{filter:brightness(1.12);}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-green{background:var(--green);color:#fff;}
+.btn-green:hover{filter:brightness(1.1);}
+.btn-red{background:#7f1d1d;color:#fca5a5;border:1px solid #ef444433;}
+.btn-red:hover{background:#991b1b;}
+.btn-sm{padding:5px 11px;font-size:12px;border-radius:6px;}
+.btn-full{width:100%;justify-content:center;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+.lang-sel{background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;outline:none;}
+.fg{margin-bottom:12px;}
+label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+input,select,textarea{width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);
+  border-radius:8px;color:var(--text);font-size:13px;outline:none;transition:border .2s;
+  -webkit-appearance:none;appearance:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+select option{background:var(--bg);}
+textarea{resize:vertical;font-family:inherit;}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;}
+.stat-n{font-family:var(--fh);font-size:26px;font-weight:700;color:var(--accent);}
+.stat-l{font-size:10px;color:var(--muted);margin-top:2px;}
+.sec-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.sec-title{font-family:var(--fh);font-size:20px;font-weight:600;}
+.search-box{position:relative;margin-bottom:10px;}
+.search-box input{padding-left:34px;}
+.si{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.chip{padding:4px 12px;border-radius:100px;font-size:12px;cursor:pointer;
+  border:1px solid var(--border);background:var(--surface2);color:var(--muted);transition:all .18s;}
+.chip.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
+.wo-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid transparent;
+  border-radius:10px;padding:13px 15px;margin-bottom:9px;cursor:pointer;transition:all .2s;}
+.wo-card:hover{background:var(--surface2);border-left-color:var(--accent);}
+.wo-card.bill_ready{border-left-color:var(--green);}
+.wo-card.in_progress{border-left-color:var(--accent);}
+.wo-title{font-family:var(--fh);font-size:17px;font-weight:600;line-height:1.2;}
+.wo-meta{font-family:var(--fm);font-size:11px;color:var(--muted);margin-top:3px;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;
+  font-size:11px;font-weight:600;font-family:var(--fm);}
+.b-orange{background:var(--accent-dim);color:var(--accent);}
+.b-green{background:var(--green-dim);color:var(--green);}
+.b-blue{background:var(--blue-dim);color:var(--blue);}
+.b-gray{background:var(--surface2);color:var(--muted);}
+.detail-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:6px;}
+.detail-info{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;}
+.detail-name{font-family:var(--fh);font-size:22px;font-weight:700;}
+.detail-area{color:var(--muted);font-size:13px;margin-top:3px;}
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+@media(max-width:580px){.panels,.tc,.stats{grid-template-columns:1fr 1fr;}.stats{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:400px){.panels{grid-template-columns:1fr;}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.panel-hdr{padding:11px 13px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
+.panel-before .panel-hdr{background:var(--blue-dim);border-left:3px solid var(--blue);}
+.panel-after .panel-hdr{background:var(--green-dim);border-left:3px solid var(--green);}
+.panel-label{font-family:var(--fh);font-size:15px;font-weight:600;}
+.panel-before .panel-label{color:var(--blue);}
+.panel-after .panel-label{color:var(--green);}
+.panel-body{padding:12px;}
+.dropzone{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;
+  cursor:pointer;transition:all .2s;margin-bottom:10px;}
+.dropzone:hover,.dropzone.ov{border-color:var(--accent);background:var(--accent-dim);}
+.dz-icon{font-size:26px;margin-bottom:5px;}
+.dz-text{font-size:11px;color:var(--muted);}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:7px;}
+.pthumb{aspect-ratio:1;border-radius:8px;overflow:hidden;position:relative;
+  background:var(--surface2);border:1px solid var(--border);cursor:pointer;}
+.pthumb img{width:100%;height:100%;object-fit:cover;}
+.pthumb-geo{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.8);
+  padding:2px 4px;font-size:7.5px;font-family:var(--fm);color:#ccc;line-height:1.3;}
+.pthumb-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.75);border:none;
+  color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;
+  display:none;align-items:center;justify-content:center;}
+.pthumb:hover .pthumb-del{display:flex;}
+.pthumb-empty{display:flex;align-items:center;justify-content:center;height:100%;font-size:22px;color:var(--muted);}
+.add-more{display:flex;align-items:center;justify-content:center;aspect-ratio:1;
+  border-radius:8px;border:2px dashed var(--border);cursor:pointer;color:var(--muted);
+  font-size:20px;transition:all .2s;}
+.add-more:hover{border-color:var(--accent);color:var(--accent);}
+.check-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.check-title{font-family:var(--fh);font-size:16px;font-weight:600;margin-bottom:12px;}
+.check-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);}
+.check-item:last-child{border-bottom:none;}
+.check-ico{font-size:15px;min-width:20px;}
+.check-lbl{font-size:13px;flex:1;}
+.check-val{font-family:var(--fm);font-size:11px;color:var(--muted);}
+.drive-link{display:flex;align-items:center;gap:8px;padding:10px 14px;
+  background:var(--accent-dim);border:1px solid rgba(249,115,22,.25);border-radius:8px;
+  color:var(--accent);font-size:12px;font-family:var(--fm);text-decoration:none;margin-top:10px;
+  transition:all .2s;}
+.drive-link:hover{background:rgba(249,115,22,.22);}
+.success-bar{background:var(--green-dim);border:1px solid rgba(34,197,94,.25);border-radius:8px;
+  padding:10px 14px;color:var(--green);font-size:12px;margin-top:8px;display:flex;align-items:center;gap:8px;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);
+  display:flex;align-items:center;justify-content:center;z-index:200;padding:14px;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:22px;width:100%;max-width:520px;max-height:94vh;overflow-y:auto;}
+.modal-title{font-family:var(--fh);font-size:21px;font-weight:700;margin-bottom:16px;}
+.tc{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal-foot{display:flex;gap:8px;margin-top:12px;}
+.empty{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty-ico{font-size:38px;margin-bottom:10px;}
+.empty-txt{font-size:13px;}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  padding:10px 20px;border-radius:9px;font-size:13px;z-index:999;display:none;
+  box-shadow:0 4px 24px rgba(0,0,0,.5);white-space:nowrap;max-width:90vw;}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hidden{display:none!important;}
+.mt8{margin-top:8px;}.mt12{margin-top:12px;}.mt16{margin-top:16px;}
+input[type="file"]{display:none;}
+.bill-card{background:var(--surface);border:1px solid var(--green);border-radius:12px;padding:16px;
+  margin-bottom:9px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.bill-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--green);}
+.bill-card:hover{background:var(--surface2);}
+.bill-card.incomplete{border-color:var(--border);}
+.bill-card.incomplete::before{background:var(--accent);}
+.bill-tag{position:absolute;top:13px;right:13px;}
+.area-group{margin-bottom:18px;}
+.area-label{font-family:var(--fm);font-size:11px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:1px;padding:0 4px;margin-bottom:7px;display:flex;align-items:center;gap:8px;}
+.area-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.tabs{display:flex;gap:3px;background:var(--surface2);border-radius:9px;padding:4px;margin-bottom:16px;}
+.tab{flex:1;padding:7px;text-align:center;border-radius:7px;cursor:pointer;font-size:13px;
+  color:var(--muted);border:none;background:none;transition:all .2s;font-family:inherit;}
+.tab.on{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.45);}
+/* PDF preview area */
+.pdf-preview{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;
+  margin-top:10px;font-size:12px;}
+.pdf-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);}
+.pdf-row:last-child{border-bottom:none;}
+/* PWA install banner */
+.pwa-bar{background:linear-gradient(90deg,var(--accent-dim),var(--blue-dim));
+  border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:14px;
+  display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.pwa-txt{font-size:12px;color:var(--text);}
+.pwa-txt strong{color:var(--accent);}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="toast"></div>
+
+<!-- ══ SETUP ══ -->
+<div id="v-setup" class="splash hidden">
+  <div class="splash-card">
+    <div class="splash-logo">📸</div>
+    <div class="splash-sub" id="t-appname">MSCB FieldPhoto Manager</div>
+    <div class="splash-desc" id="t-appdesc">Auto-organize before/after site photos in Google Drive — ready for billing.</div>
+    <div class="steps">
+      <div class="steps-title" id="t-setup-title">⚙️ One-Time Google Setup</div>
+      <div class="step"><div class="step-n">1</div><div id="t-s1">Go to <strong>console.cloud.google.com</strong> → New Project</div></div>
+      <div class="step"><div class="step-n">2</div><div id="t-s2">Enable <strong>Google Drive API</strong> in APIs &amp; Services</div></div>
+      <div class="step"><div class="step-n">3</div><div id="t-s3">Create <strong>OAuth 2.0 Client ID</strong> → Web Application type</div></div>
+      <div class="step"><div class="step-n">4</div><div id="t-s4">Add this page URL to <strong>Authorized JavaScript Origins</strong></div></div>
+      <div class="step"><div class="step-n">5</div><div id="t-s5">Paste your <strong>Client ID</strong> below and sign in</div></div>
+    </div>
+    <div class="fg" style="text-align:left;">
+      <label id="t-cid-label">Google OAuth Client ID</label>
+      <input id="cid" type="text" placeholder="xxxxxx.apps.googleusercontent.com">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveClientId()" id="t-save-cid">✅ Save &amp; Continue</button>
+    <div style="margin-top:12px;font-size:11px;color:var(--muted);" id="t-privacy">Your photos stay in your own Google Drive. No data stored on any server.</div>
+  </div>
+</div>
+
+<!-- ══ LOGIN ══ -->
+<div id="v-login" class="splash hidden">
+  <div class="splash-card">
+    <div class="splash-logo">📸</div>
+    <div class="splash-sub" id="t-appname2">MSCB FieldPhoto Manager</div>
+    <div class="splash-desc" id="t-signin-desc">Sign in with Google to connect your Drive and start organizing work photos.</div>
+    <button class="btn btn-primary btn-full" onclick="signIn()" id="t-signin-btn">🔑 Sign In with Google</button>
+    <button class="btn btn-ghost btn-full mt8" onclick="resetCid()" id="t-changecid">← Change Client ID</button>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="v-main" class="hidden">
+  <div class="hdr">
+    <div class="hdr-logo">📸 MSCB <span>FieldPhoto</span></div>
+    <div class="hdr-right">
+      <select class="lang-sel" id="langSel" onchange="changeLang(this.value)">
+        <option value="en">🇬🇧 EN</option>
+        <option value="hi">🇮🇳 हिंदी</option>
+        <option value="mr">🇮🇳 मराठी</option>
+      </select>
+      <span class="user-email" id="uemail"></span>
+      <button class="btn btn-ghost btn-sm" onclick="signOut()" id="t-signout">Out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- PWA Install Bar -->
+    <div class="pwa-bar" id="pwa-bar" style="display:none;">
+      <div class="pwa-txt"><strong>📱 Install as App!</strong> Tap Share → "Add to Home Screen" to use like an Android app.</div>
+      <button class="btn btn-primary btn-sm" onclick="installPWA()" id="t-install">Install</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab on" id="tab-work" onclick="switchTab('work')" data-i="tab_work">📋 Work Orders</button>
+      <button class="tab" id="tab-bill" onclick="switchTab('bill')" data-i="tab_bill">🧾 Bill Filing</button>
+      <button class="tab" id="tab-guide" onclick="switchTab('guide')" data-i="tab_guide">📖 Guide</button>
+    </div>
+
+    <!-- ── WORK ORDERS ── -->
+    <div id="tab-work-content">
+      <div id="v-dash">
+        <div class="stats">
+          <div class="stat"><div class="stat-n" id="s-total">0</div><div class="stat-l" id="t-stat-total">Orders</div></div>
+          <div class="stat"><div class="stat-n" id="s-photos">0</div><div class="stat-l" id="t-stat-photos">Photos</div></div>
+          <div class="stat"><div class="stat-n" id="s-ready">0</div><div class="stat-l" id="t-stat-ready">Bill Ready</div></div>
+          <div class="stat"><div class="stat-n" id="s-pending">0</div><div class="stat-l" id="t-stat-pending">Pending</div></div>
+        </div>
+        <div class="sec-hdr">
+          <div class="sec-title" id="t-wo-title">Work Orders</div>
+          <button class="btn btn-primary" onclick="openNewWO()" id="t-new-order">+ New Order</button>
+        </div>
+        <div class="search-box"><span class="si">🔍</span><input id="srch" type="text" placeholder="Search MO, PO, area, station..." data-i-ph="search_ph" oninput="renderDash()"></div>
+        <div class="filters">
+          <div class="chip active" onclick="setFilter(this,'all')" data-i="f_all">All</div>
+          <div class="chip" onclick="setFilter(this,'in_progress')" data-i="f_inprog">In Progress</div>
+          <div class="chip" onclick="setFilter(this,'bill_ready')" data-i="f_ready">Bill Ready</div>
+        </div>
+        <div id="wo-list"></div>
+      </div>
+
+      <!-- Work Order Detail -->
+      <div id="v-detail" class="hidden">
+        <div class="detail-hdr">
+          <button class="btn btn-ghost btn-sm" onclick="backToDash()" id="t-back">← Back</button>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" id="btn-drive">📂 Drive</button>
+            <button class="btn btn-ghost btn-sm" id="btn-pdf" onclick="generatePDF()">📄 PDF Report</button>
+            <button class="btn btn-sm btn-ghost btn-red-act" id="btn-delete" onclick="deleteWO()">🗑️</button>
+            <button class="btn btn-sm" id="btn-billready" onclick="toggleBillReady()">✅ Bill Ready</button>
+          </div>
+        </div>
+        <div class="detail-info" id="detail-info"></div>
+        <div class="panels" id="photo-panels">
+          <div class="panel panel-before">
+            <div class="panel-hdr">
+              <div><div class="panel-label" id="t-before-lbl">📷 Before Work</div><div id="bc-count" style="font-size:11px;color:var(--muted);">0 photos</div></div>
+              <button class="btn btn-ghost btn-sm" onclick="pickFiles('before')" id="t-add-ph">+ Add</button>
+            </div>
+            <div class="panel-body">
+              <div class="dropzone" id="dz-before" onclick="pickFiles('before')">
+                <div class="dz-icon">📁</div>
+                <div class="dz-text" id="t-dz-text">Tap to add photos • GPS auto-tagged</div>
+              </div>
+              <div class="pgrid" id="grid-before"></div>
+            </div>
+          </div>
+          <div class="panel panel-after">
+            <div class="panel-hdr">
+              <div><div class="panel-label" id="t-after-lbl">📷 After Work</div><div id="ac-count" style="font-size:11px;color:var(--muted);">0 photos</div></div>
+              <button class="btn btn-ghost btn-sm" onclick="pickFiles('after')" id="t-add-ph2">+ Add</button>
+            </div>
+            <div class="panel-body">
+              <div class="dropzone" id="dz-after" onclick="pickFiles('after')">
+                <div class="dz-icon">📁</div>
+                <div class="dz-text" id="t-dz-text2">Tap to add photos • GPS auto-tagged</div>
+              </div>
+              <div class="pgrid" id="grid-after"></div>
+            </div>
+          </div>
+        </div>
+        <div class="check-card">
+          <div class="check-title" id="t-checklist-title">📋 Bill Filing Checklist</div>
+          <div id="checklist"></div>
+          <div id="drive-links"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── BILL FILING TAB ── -->
+    <div id="tab-bill-content" class="hidden">
+      <div class="sec-hdr">
+        <div class="sec-title" id="t-bill-title">🧾 Bill Filing</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;" id="t-bill-desc">
+        Click any work order to open its Google Drive folder — upload directly to MSCB portal.
+      </div>
+      <div class="search-box"><span class="si">🔍</span><input id="bsrch" type="text" placeholder="Search..." oninput="renderBill()"></div>
+      <div id="bill-list"></div>
+    </div>
+
+    <!-- ── GUIDE TAB ── -->
+    <div id="tab-guide-content" class="hidden">
+      <div style="max-width:640px;">
+        <div class="sec-title" style="margin-bottom:16px;" id="t-guide-title">📖 How to Use This App</div>
+
+        <div class="check-card" style="margin-bottom:14px;">
+          <div class="check-title">🔄 Daily Workflow</div>
+          <div class="step" style="margin-bottom:10px;"><div class="step-n">1</div><div><strong>Before going to site</strong> — Create a new Work Order with MO, PO, Area, Station.</div></div>
+          <div class="step" style="margin-bottom:10px;"><div class="step-n">2</div><div><strong>At site (before work)</strong> — Open the Work Order → tap "📷 Before Work" → add photos. GPS is auto-tagged.</div></div>
+          <div class="step" style="margin-bottom:10px;"><div class="step-n">3</div><div><strong>After work is done</strong> — Tap "📷 After Work" → add completion photos.</div></div>
+          <div class="step" style="margin-bottom:10px;"><div class="step-n">4</div><div><strong>Mark as Bill Ready</strong> — Once all photos are uploaded, tap "✅ Mark Bill Ready".</div></div>
+          <div class="step"><div class="step-n">5</div><div><strong>File the bill</strong> — Go to 🧾 Bill Filing tab → click the work order → open Drive folder → upload to MSCB portal.</div></div>
+        </div>
+
+        <div class="check-card" style="margin-bottom:14px;">
+          <div class="check-title">📂 How Drive is Organized</div>
+          <div style="font-family:var(--fm);font-size:12px;color:var(--muted);line-height:1.9;background:var(--bg);padding:12px;border-radius:8px;">
+            MSCB_FieldPhoto_Manager/<br>
+            &nbsp;&nbsp;└── [Area Name]/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── MO001_VillageGhatne/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── 1_Before_Work/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;└── 2024-03-18_18.5204_73.8567_photo.jpg<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── 2_After_Work/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── 2024-03-18_18.5205_73.8568_photo.jpg
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:10px;">Each filename contains: <strong style="color:var(--text);">Date + GPS Coordinates + Type</strong> — so you always know where and when the photo was taken.</div>
+        </div>
+
+        <div class="check-card" style="margin-bottom:14px;">
+          <div class="check-title">📱 Install as Android App</div>
+          <div class="step" style="margin-bottom:8px;"><div class="step-n">1</div><div>Open this page in <strong>Chrome browser</strong> on your Android phone.</div></div>
+          <div class="step" style="margin-bottom:8px;"><div class="step-n">2</div><div>Tap the <strong>3-dot menu (⋮)</strong> at the top right.</div></div>
+          <div class="step" style="margin-bottom:8px;"><div class="step-n">3</div><div>Tap <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong>.</div></div>
+          <div class="step"><div class="step-n">4</div><div>The app icon will appear on your home screen — works like a native app!</div></div>
+        </div>
+
+        <div class="check-card">
+          <div class="check-title">📄 PDF Bill Report</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+            Open any Work Order → tap <strong style="color:var(--text);">📄 PDF Report</strong> button.<br>
+            A PDF is generated with: MO/PO numbers, area, station, work type, date, contractor name, photo count, GPS coordinates, and Drive folder link — ready to attach to your bill.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NEW WORK ORDER MODAL ══ -->
+<div id="modal-new" class="overlay hidden" onclick="closeModalIf(event)">
+  <div class="modal" id="modal-new-box">
+    <div class="modal-title" id="t-modal-title">➕ New Work Order</div>
+    <div class="tc">
+      <div class="fg"><label id="t-mo-lbl">MO Number *</label><input id="n-mo" type="text" placeholder="MO-2024-001"></div>
+      <div class="fg"><label id="t-po-lbl">PO Number</label><input id="n-po" type="text" placeholder="PO-MSCB-01"></div>
+    </div>
+    <div class="tc">
+      <div class="fg"><label id="t-area-lbl">Area / Division *</label><input id="n-area" type="text" placeholder="Aurangabad North"></div>
+      <div class="fg"><label id="t-site-lbl">Station / Site *</label><input id="n-site" type="text" placeholder="Village Ghatne"></div>
+    </div>
+    <div class="fg">
+      <label id="t-wtype-lbl">Work Type *</label>
+      <select id="n-wtype">
+        <option value="" id="t-wt-sel">Select work type...</option>
+        <option>Pole Erection</option><option>Pole Replacement / Repair</option>
+        <option>Cable Laying</option><option>Transformer Installation</option>
+        <option>Transformer Repair</option><option>Line Stringing</option>
+        <option>Fuse / Switch Replacement</option><option>Line Maintenance</option>
+        <option>Metering Work</option><option>New Connection</option>
+        <option>HT / LT Line Work</option><option>Other</option>
+      </select>
+    </div>
+    <div class="fg"><label id="t-desc-lbl">Description</label><textarea id="n-desc" rows="2" placeholder="Brief description..."></textarea></div>
+    <div class="tc">
+      <div class="fg"><label id="t-date-lbl">Work Date</label><input id="n-date" type="date"></div>
+      <div class="fg"><label id="t-cont-lbl">Contractor Name</label><input id="n-cont" type="text" placeholder="Your name / company"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal()" id="t-cancel">Cancel</button>
+      <button class="btn btn-primary" style="flex:2;" id="btn-createwo" onclick="createWO()">Create Work Order</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="finput" multiple accept="image/*,video/*" onchange="onFilePick(event)">
+
+<script>
+// ============================================================
+// TRANSLATIONS
+// ============================================================
+const T = {
+  en:{
+    appname:'MSCB FieldPhoto Manager',
+    tab_work:'📋 Work Orders', tab_bill:'🧾 Bill Filing', tab_guide:'📖 Guide',
+    new_order:'+ New Order', search_ph:'Search MO, PO, area, station...',
+    f_all:'All', f_inprog:'In Progress', f_ready:'Bill Ready',
+    before_lbl:'📷 Before Work', after_lbl:'📷 After Work',
+    stat_total:'Orders', stat_photos:'Photos', stat_ready:'Bill Ready', stat_pending:'Pending',
+    bill_ready_badge:'✅ Bill Ready', inprog_badge:'⏳ In Progress',
+    dz_text:'Tap to add photos • GPS auto-tagged',
+    checklist_title:'📋 Bill Filing Checklist',
+    bill_title:'🧾 Bill Filing', bill_desc:'Click any work order to open its Drive folder.',
+    guide_title:'📖 How to Use',
+    back:'← Back', cancel:'Cancel', signout:'Sign Out', install:'Install App',
+    modal_title:'➕ New Work Order',
+    mo_lbl:'MO Number *', po_lbl:'PO Number', area_lbl:'Area / Division *',
+    site_lbl:'Station / Site *', wtype_lbl:'Work Type *', desc_lbl:'Description',
+    date_lbl:'Work Date', cont_lbl:'Contractor Name',
+  },
+  hi:{
+    appname:'MSCB फील्डफोटो मैनेजर',
+    tab_work:'📋 कार्य आदेश', tab_bill:'🧾 बिल दाखिल', tab_guide:'📖 गाइड',
+    new_order:'+ नया आदेश', search_ph:'MO, PO, क्षेत्र खोजें...',
+    f_all:'सभी', f_inprog:'चल रहा', f_ready:'बिल तैयार',
+    before_lbl:'📷 काम से पहले', after_lbl:'📷 काम के बाद',
+    stat_total:'कार्य', stat_photos:'फ़ोटो', stat_ready:'बिल तैयार', stat_pending:'बाकी',
+    bill_ready_badge:'✅ बिल तैयार', inprog_badge:'⏳ जारी',
+    dz_text:'फ़ोटो जोड़ने के लिए टैप करें • GPS स्वतः टैग',
+    checklist_title:'📋 बिल चेकलिस्ट',
+    bill_title:'🧾 बिल दाखिल', bill_desc:'किसी भी कार्य पर क्लिक करें → Drive फ़ोल्डर खोलें।',
+    guide_title:'📖 उपयोग कैसे करें',
+    back:'← वापस', cancel:'रद्द करें', signout:'साइन आउट', install:'ऐप इंस्टॉल करें',
+    modal_title:'➕ नया कार्य आदेश',
+    mo_lbl:'MO नंबर *', po_lbl:'PO नंबर', area_lbl:'क्षेत्र / विभाग *',
+    site_lbl:'स्टेशन / साइट *', wtype_lbl:'कार्य प्रकार *', desc_lbl:'विवरण',
+    date_lbl:'कार्य तिथि', cont_lbl:'ठेकेदार का नाम',
+  },
+  mr:{
+    appname:'MSCB फील्डफोटो व्यवस्थापक',
+    tab_work:'📋 कामाचे आदेश', tab_bill:'🧾 बिल दाखल', tab_guide:'📖 मार्गदर्शन',
+    new_order:'+ नवा आदेश', search_ph:'MO, PO, क्षेत्र शोधा...',
+    f_all:'सर्व', f_inprog:'सुरू आहे', f_ready:'बिल तयार',
+    before_lbl:'📷 काम करण्यापूर्वी', after_lbl:'📷 काम केल्यानंतर',
+    stat_total:'कामे', stat_photos:'फोटो', stat_ready:'बिल तयार', stat_pending:'बाकी',
+    bill_ready_badge:'✅ बिल तयार', inprog_badge:'⏳ सुरू आहे',
+    dz_text:'फोटो जोडण्यासाठी टॅप करा • GPS आपोआप टॅग',
+    checklist_title:'📋 बिल चेकलिस्ट',
+    bill_title:'🧾 बिल दाखल', bill_desc:'कोणत्याही कामावर क्लिक करा → Drive फोल्डर उघडा।',
+    guide_title:'📖 वापर कसा करावा',
+    back:'← मागे', cancel:'रद्द करा', signout:'साइन आउट', install:'ॲप इन्स्टॉल करा',
+    modal_title:'➕ नवा कामाचा आदेश',
+    mo_lbl:'MO क्रमांक *', po_lbl:'PO क्रमांक', area_lbl:'क्षेत्र / विभाग *',
+    site_lbl:'स्टेशन / साइट *', wtype_lbl:'कामाचा प्रकार *', desc_lbl:'वर्णन',
+    date_lbl:'कामाची तारीख', cont_lbl:'कंत्राटदाराचे नाव',
+  }
+};
+
+let lang = localStorage.getItem('mscb_lang')||'en';
+function t(k){ return (T[lang]||T.en)[k] || k; }
+
+function applyLang(){
+  const tmap = {
+    'tab-work':'tab_work','tab-bill':'tab_bill','tab-guide':'tab_guide',
+    't-new-order':'new_order','t-before-lbl':'before_lbl','t-after-lbl':'after_lbl',
+    't-stat-total':'stat_total','t-stat-photos':'stat_photos',
+    't-stat-ready':'stat_ready','t-stat-pending':'stat_pending',
+    't-dz-text':'dz_text','t-dz-text2':'dz_text',
+    't-checklist-title':'checklist_title','t-bill-title':'bill_title',
+    't-bill-desc':'bill_desc','t-guide-title':'guide_title',
+    't-back':'back','t-cancel':'cancel','t-signout':'signout',
+    't-install':'install','t-modal-title':'modal_title',
+    't-mo-lbl':'mo_lbl','t-po-lbl':'po_lbl','t-area-lbl':'area_lbl',
+    't-site-lbl':'site_lbl','t-wtype-lbl':'wtype_lbl','t-desc-lbl':'desc_lbl',
+    't-date-lbl':'date_lbl','t-cont-lbl':'cont_lbl',
+    't-wo-title':'tab_work',
+  };
+  Object.entries(tmap).forEach(([id,key])=>{
+    const el=doc(id); if(el) el.textContent=t(key);
+  });
+  // chips
+  document.querySelectorAll('[data-i]').forEach(el=>{
+    const k=el.getAttribute('data-i'); if(T[lang]&&T[lang][k]) el.textContent=T[lang][k];
+  });
+  doc('srch') && (doc('srch').placeholder=t('search_ph'));
+  doc('bsrch') && (doc('bsrch').placeholder=t('search_ph'));
+  doc('langSel') && (doc('langSel').value=lang);
+}
+
+function changeLang(l){ lang=l; localStorage.setItem('mscb_lang',l); applyLang(); renderDash(); renderBill(); if(currWO) renderDetail(); }
+
+// ============================================================
+// STATE
+// ============================================================
+let AT=null, WOs=[], currWO=null, upType=null, filter='all', rootId=null, dataFid=null;
+const ROOT='MSCB_FieldPhoto_Manager', DATAFILE='_wo_data.json';
+let deferredInstall=null;
+
+// ============================================================
+// BOOT
+// ============================================================
+window.onload = ()=>{
+  const cid=localStorage.getItem('mscb_cid');
+  show(cid?'v-login':'v-setup');
+  const nd=doc('n-date'); if(nd) nd.value=today();
+  setupDnD();
+  applyLang();
+  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredInstall=e; doc('pwa-bar').style.display='flex'; });
+};
+function today(){ return new Date().toISOString().split('T')[0]; }
+function show(id){ ['v-setup','v-login','v-main'].forEach(s=>doc(s).classList.add('hidden')); doc(id).classList.remove('hidden'); }
+function doc(id){ return document.getElementById(id); }
+
+function saveClientId(){
+  const v=doc('cid').value.trim();
+  if(!v.includes('.apps.googleusercontent.com')){ toast('❌ Enter a valid Google OAuth Client ID'); return; }
+  localStorage.setItem('mscb_cid',v); show('v-login');
+}
+function resetCid(){ localStorage.removeItem('mscb_cid'); show('v-setup'); }
+
+function signIn(){
+  const cid=localStorage.getItem('mscb_cid');
+  if(!cid){ show('v-setup'); return; }
+  if(typeof google==='undefined'){ toast('⏳ Loading... try again'); return; }
+  google.accounts.oauth2.initTokenClient({
+    client_id:cid,
+    scope:'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email',
+    callback: async resp=>{
+      if(resp.error){ toast('❌ Sign-in failed: '+resp.error); return; }
+      AT=resp.access_token;
+      try{ const r=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+AT}}); const u=await r.json(); doc('uemail').textContent=u.email||''; }catch(e){}
+      show('v-main'); applyLang(); toast('✅ Signed in!');
+      await initDrive(); renderDash();
+    }
+  }).requestAccessToken();
+}
+function signOut(){ AT=null; WOs=[]; rootId=null; dataFid=null; currWO=null; show('v-login'); }
+
+function installPWA(){ if(deferredInstall){ deferredInstall.prompt(); deferredInstall=null; doc('pwa-bar').style.display='none'; } }
+
+// ============================================================
+// DRIVE API
+// ============================================================
+async function api(method,url,body,ctype){
+  const opts={method,headers:{Authorization:'Bearer '+AT}};
+  if(body&&ctype==='json'){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
+  else if(body){opts.body=body;}
+  const r=await fetch(url,opts);
+  if(!r.ok){const tt=await r.text();throw new Error(tt);}
+  return r.json();
+}
+async function mkFolder(name,pid){
+  return (await api('POST','https://www.googleapis.com/drive/v3/files?fields=id',
+    {name,mimeType:'application/vnd.google-apps.folder',parents:pid?[pid]:[]}, 'json')).id;
+}
+async function findFolder(name,pid){
+  let q=`name='${name.replace(/'/g,"\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  if(pid) q+=` and '${pid}' in parents`;
+  const r=await api('GET',`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`,null);
+  return r.files&&r.files[0]?r.files[0].id:null;
+}
+async function findOrMk(name,pid){ let id=await findFolder(name,pid); if(!id) id=await mkFolder(name,pid); return id; }
+async function uploadFile(blob,name,pid){
+  const meta={name,parents:[pid]};
+  const fd=new FormData();
+  fd.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
+  fd.append('file',blob);
+  const r=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',{method:'POST',headers:{Authorization:'Bearer '+AT},body:fd});
+  return r.json();
+}
+async function saveData(){
+  const json=JSON.stringify(WOs,null,2);
+  if(dataFid){
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${dataFid}?uploadType=media`,{method:'PATCH',headers:{Authorization:'Bearer '+AT,'Content-Type':'application/json'},body:json});
+  }else{
+    const r=await uploadFile(new Blob([json],{type:'application/json'}),DATAFILE,rootId); dataFid=r.id;
+  }
+}
+async function loadData(){
+  const q=`name='${DATAFILE}' and '${rootId}' in parents and trashed=false`;
+  const r=await api('GET',`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`,null);
+  if(r.files&&r.files[0]){
+    dataFid=r.files[0].id;
+    const dr=await fetch(`https://www.googleapis.com/drive/v3/files/${dataFid}?alt=media`,{headers:{Authorization:'Bearer '+AT}});
+    const d=await dr.json(); WOs=Array.isArray(d)?d:[];
+  }
+}
+async function getFolderLink(id){
+  try{ const r=await api('GET',`https://www.googleapis.com/drive/v3/files/${id}?fields=webViewLink`,null); return r.webViewLink||`https://drive.google.com/drive/folders/${id}`; }
+  catch(e){ return `https://drive.google.com/drive/folders/${id}`; }
+}
+async function initDrive(){
+  toast('⏳ Connecting to Google Drive...');
+  try{ rootId=await findOrMk(ROOT); await loadData(); toast('✅ Google Drive connected!'); }
+  catch(e){ toast('⚠️ Drive error: '+e.message); console.error(e); }
+}
+
+// ============================================================
+// WORK ORDERS
+// ============================================================
+function safe(s){ return (s||'').replace(/[^a-zA-Z0-9 _\-\.]/g,'').trim(); }
+function uid(){ return 'WO_'+Date.now()+'_'+Math.random().toString(36).slice(2,6); }
+
+async function createWO(){
+  const mo=doc('n-mo').value.trim(), po=doc('n-po').value.trim(),
+        area=doc('n-area').value.trim(), site=doc('n-site').value.trim(),
+        wt=doc('n-wtype').value, desc=doc('n-desc').value.trim(),
+        date=doc('n-date').value, cont=doc('n-cont').value.trim();
+  if(!mo||!area||!site||!wt){ toast('❌ Please fill all required fields'); return; }
+  const btn=doc('btn-createwo'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> Creating...';
+  try{
+    const id=uid();
+    const folderName=`${safe(mo)}_${safe(site)}`.substring(0,80);
+    const aFid2=await findOrMk(safe(area),rootId);
+    const wFid=await mkFolder(folderName,aFid2);
+    const bFid=await mkFolder('1_Before_Work',wFid);
+    const aFidP=await mkFolder('2_After_Work',wFid);
+    const link=await getFolderLink(wFid);
+    const wo={id,mo,po,area,site,workType:wt,desc,date,contractor:cont,
+      status:'in_progress',driveFid:wFid,driveBefore:bFid,driveAfter:aFidP,driveLink:link,
+      photos:{before:[],after:[]},createdAt:new Date().toISOString()};
+    WOs.unshift(wo);
+    await saveData();
+    closeModal(); toast('✅ Work order created!');
+    renderDash(); openWO(id);
+  }catch(e){ toast('❌ '+e.message); console.error(e); }
+  finally{ btn.disabled=false; btn.textContent='Create Work Order'; }
+}
+
+function openWO(id){
+  currWO=WOs.find(w=>w.id===id); if(!currWO) return;
+  doc('v-dash').classList.add('hidden'); doc('v-detail').classList.remove('hidden');
+  renderDetail();
+}
+function backToDash(){
+  doc('v-dash').classList.remove('hidden'); doc('v-detail').classList.add('hidden');
+  renderDash();
+}
+
+async function toggleBillReady(){
+  if(!currWO) return;
+  if(currWO.status!=='bill_ready'&&(!(currWO.photos?.before?.length)||!(currWO.photos?.after?.length))){
+    toast('⚠️ Upload both Before and After photos first'); return;
+  }
+  currWO.status=currWO.status==='bill_ready'?'in_progress':'bill_ready';
+  await saveData(); renderDetail(); renderDash();
+  toast(currWO.status==='bill_ready'?'✅ Marked as Bill Ready!':'↩️ Marked as In Progress');
+}
+
+async function deleteWO(){
+  if(!currWO) return;
+  if(!confirm(`Delete work order: ${currWO.site}?\nDrive folders will remain.`)) return;
+  WOs=WOs.filter(w=>w.id!==currWO.id);
+  await saveData(); backToDash(); toast('🗑️ Work order deleted.');
+}
+
+// ============================================================
+// PDF REPORT GENERATOR
+// ============================================================
+async function generatePDF(){
+  if(!currWO){ toast('No work order selected'); return; }
+  const btn=doc('btn-pdf'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+  try{
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const W=210, mg=18;
+    let y=mg;
+
+    // Header bar
+    pdf.setFillColor(249,115,22);
+    pdf.rect(0,0,W,22,'F');
+    pdf.setTextColor(255,255,255);
+    pdf.setFontSize(16); pdf.setFont('helvetica','bold');
+    pdf.text('MSCB FieldPhoto Manager — Work Completion Report',mg,14);
+    y=32;
+
+    // Title
+    pdf.setTextColor(30,30,30);
+    pdf.setFontSize(14); pdf.setFont('helvetica','bold');
+    pdf.text(`${currWO.site} — ${currWO.workType}`,mg,y); y+=8;
+
+    // Info table
+    pdf.setFontSize(10); pdf.setFont('helvetica','normal');
+    const rows=[
+      ['MO Number', currWO.mo||'—'],
+      ['PO Number', currWO.po||'—'],
+      ['Area / Division', currWO.area||'—'],
+      ['Station / Site', currWO.site||'—'],
+      ['Work Type', currWO.workType||'—'],
+      ['Work Date', currWO.date||'—'],
+      ['Contractor', currWO.contractor||'—'],
+      ['Status', currWO.status==='bill_ready'?'✅ Bill Ready':'⏳ In Progress'],
+      ['Created At', currWO.createdAt?currWO.createdAt.split('T')[0]:'—'],
+    ];
+    rows.forEach(([k,v],i)=>{
+      if(i%2===0) pdf.setFillColor(248,248,248); else pdf.setFillColor(255,255,255);
+      pdf.rect(mg,y-4,W-mg*2,8,'F');
+      pdf.setFont('helvetica','bold'); pdf.text(k+':',mg+2,y);
+      pdf.setFont('helvetica','normal'); pdf.text(String(v),mg+50,y);
+      y+=9;
+    });
+    y+=4;
+
+    // Description
+    if(currWO.desc){
+      pdf.setFont('helvetica','bold'); pdf.text('Description:',mg,y); y+=6;
+      pdf.setFont('helvetica','normal');
+      const lines=pdf.splitTextToSize(currWO.desc,W-mg*2);
+      pdf.text(lines,mg,y); y+=lines.length*6+4;
+    }
+
+    // Photo summary
+    const bc=currWO.photos?.before?.length||0, ac=currWO.photos?.after?.length||0;
+    pdf.setFillColor(249,115,22); pdf.rect(mg,y,W-mg*2,8,'F');
+    pdf.setTextColor(255,255,255); pdf.setFont('helvetica','bold'); pdf.setFontSize(11);
+    pdf.text('📷 Photo Summary',mg+2,y+5.5); y+=12;
+
+    pdf.setTextColor(30,30,30); pdf.setFontSize(10); pdf.setFont('helvetica','normal');
+    pdf.text(`Before Work Photos: ${bc}`,mg,y); y+=7;
+    pdf.text(`After Work Photos: ${ac}`,mg,y); y+=7;
+    pdf.text(`Total Photos: ${bc+ac}`,mg,y); y+=12;
+
+    // GPS from first before photo
+    if(currWO.photos?.before?.length){
+      const p=currWO.photos.before[0];
+      if(p.lat){
+        pdf.setFont('helvetica','bold'); pdf.text('GPS Location (Before):',mg,y);
+        pdf.setFont('helvetica','normal'); pdf.text(`${Number(p.lat).toFixed(6)}, ${Number(p.lng).toFixed(6)}`,mg+52,y); y+=8;
+      }
+    }
+    if(currWO.photos?.after?.length){
+      const p=currWO.photos.after[0];
+      if(p.lat){
+        pdf.setFont('helvetica','bold'); pdf.text('GPS Location (After):',mg,y);
+        pdf.setFont('helvetica','normal'); pdf.text(`${Number(p.lat).toFixed(6)}, ${Number(p.lng).toFixed(6)}`,mg+52,y); y+=8;
+      }
+    }
+    y+=4;
+
+    // Drive link
+    if(currWO.driveLink){
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(10);
+      pdf.text('Google Drive Folder:',mg,y); y+=6;
+      pdf.setFont('helvetica','normal'); pdf.setTextColor(59,130,246);
+      const linkLines=pdf.splitTextToSize(currWO.driveLink,W-mg*2);
+      pdf.text(linkLines,mg,y); y+=linkLines.length*6+6;
+    }
+
+    // Checklist status
+    pdf.setTextColor(30,30,30);
+    pdf.setFillColor(34,197,94); pdf.rect(mg,y,W-mg*2,8,'F');
+    pdf.setTextColor(255,255,255); pdf.setFont('helvetica','bold'); pdf.setFontSize(11);
+    pdf.text('📋 Bill Filing Checklist',mg+2,y+5.5); y+=12;
+
+    pdf.setTextColor(30,30,30); pdf.setFont('helvetica','normal'); pdf.setFontSize(10);
+    const checks=[
+      [bc>0, `Before work photos: ${bc} uploaded`],
+      [ac>0, `After work photos: ${ac} uploaded`],
+      [!!currWO.mo, `MO Number: ${currWO.mo||'MISSING'}`],
+      [!!currWO.po, `PO Number: ${currWO.po||'(not set)'}`],
+      [!!currWO.area&&!!currWO.site, `Area & Station: ${currWO.area} — ${currWO.site}`],
+    ];
+    checks.forEach(([ok,lbl])=>{
+      pdf.setTextColor(ok?22:220, ok?163:38, ok?74:38);
+      pdf.text((ok?'✓ ':'✗ ')+lbl,mg,y); y+=7;
+    });
+
+    // Footer
+    pdf.setTextColor(150,150,150); pdf.setFontSize(8); pdf.setFont('helvetica','normal');
+    pdf.text(`Generated: ${new Date().toLocaleString()} | MSCB FieldPhoto Manager`,mg,290);
+    pdf.text(`Page 1 of 1`,W-mg-18,290);
+
+    const fname=`MSCB_${safe(currWO.mo)}_${safe(currWO.site)}_Report.pdf`;
+    pdf.save(fname);
+    toast('✅ PDF downloaded: '+fname);
+  }catch(e){ toast('❌ PDF error: '+e.message); console.error(e); }
+  finally{ btn.disabled=false; btn.innerHTML='📄 PDF Report'; }
+}
+
+// ============================================================
+// RENDER — DASHBOARD
+// ============================================================
+function renderDash(){
+  const q=(doc('srch')?.value||'').toLowerCase();
+  const filtered=WOs.filter(w=>{
+    const ms=!q||[w.mo,w.po,w.area,w.site,w.workType].join(' ').toLowerCase().includes(q);
+    const mf=filter==='all'||(filter==='in_progress'&&w.status==='in_progress')||(filter==='bill_ready'&&w.status==='bill_ready');
+    return ms&&mf;
+  });
+  const tp=WOs.reduce((n,w)=>(n+(w.photos?.before?.length||0)+(w.photos?.after?.length||0)),0);
+  const rdy=WOs.filter(w=>w.status==='bill_ready').length;
+  doc('s-total').textContent=WOs.length;
+  doc('s-photos').textContent=tp;
+  doc('s-ready').textContent=rdy;
+  doc('s-pending').textContent=WOs.length-rdy;
+
+  if(!filtered.length){
+    doc('wo-list').innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-txt">No work orders found.<br>Tap "New Order" to get started.</div></div>';
+    return;
+  }
+  // Group by area
+  const areas={};
+  filtered.forEach(w=>{ if(!areas[w.area]) areas[w.area]=[]; areas[w.area].push(w); });
+  doc('wo-list').innerHTML=Object.entries(areas).map(([area,wos])=>`
+    <div class="area-group">
+      <div class="area-label">📍 ${esc(area)}</div>
+      ${wos.map(w=>{
+        const bc=w.photos?.before?.length||0,ac=w.photos?.after?.length||0;
+        const sb=w.status==='bill_ready'
+          ?`<span class="badge b-green">${t('bill_ready_badge')}</span>`
+          :`<span class="badge b-orange">${t('inprog_badge')}</span>`;
+        return `<div class="wo-card ${w.status}" onclick="openWO('${w.id}')">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">
+            <div>
+              <div class="wo-title">${esc(w.site)} — ${esc(w.workType)}</div>
+              <div class="wo-meta">MO: ${esc(w.mo)||'—'}${w.po?' | PO: '+esc(w.po):''}</div>
+              <div class="wo-meta">📅 ${w.date||'—'} &nbsp;|&nbsp; 📷 ${bc}+${ac} photos</div>
+            </div>
+            <div>${sb}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`).join('');
+}
+
+function setFilter(el,f){
+  filter=f;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderDash();
+}
+
+// ============================================================
+// RENDER — DETAIL
+// ============================================================
+function renderDetail(){
+  const w=currWO;
+  doc('detail-info').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+      <div>
+        <div class="detail-name">${esc(w.site)} — ${esc(w.workType)}</div>
+        <div class="detail-area">📍 ${esc(w.area)}${w.contractor?' | 👷 '+esc(w.contractor):''}</div>
+      </div>
+      <span class="badge ${w.status==='bill_ready'?'b-green':'b-orange'}">${w.status==='bill_ready'?t('bill_ready_badge'):t('inprog_badge')}</span>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+      ${w.mo?`<span class="badge b-orange">MO: ${esc(w.mo)}</span>`:''}
+      ${w.po?`<span class="badge b-blue">PO: ${esc(w.po)}</span>`:''}
+      ${w.date?`<span class="badge b-gray">📅 ${w.date}</span>`:''}
+    </div>
+    ${w.desc?`<div style="margin-top:8px;font-size:12px;color:var(--muted);">${esc(w.desc)}</div>`:''}
+  `;
+  doc('btn-drive').onclick=()=>{ if(w.driveLink) window.open(w.driveLink,'_blank'); };
+  const bb=doc('btn-billready');
+  bb.className='btn btn-sm '+(w.status==='bill_ready'?'btn-ghost':'btn-green');
+  bb.textContent=w.status==='bill_ready'?'↩️ Unmark':'✅ '+t('f_ready');
+  renderPhotos(); renderChecklist();
+}
+
+function renderPhotos(){
+  const w=currWO;
+  const bArr=w.photos?.before||[], aArr=w.photos?.after||[];
+  doc('bc-count').textContent=`${bArr.length} photo(s)`;
+  doc('ac-count').textContent=`${aArr.length} photo(s)`;
+  doc('grid-before').innerHTML=photoGrid(bArr,'before');
+  doc('grid-after').innerHTML=photoGrid(aArr,'after');
+}
+
+function photoGrid(photos,type){
+  let h=photos.map((p,i)=>`
+    <div class="pthumb" onclick="window.open('${p.link||'#'}','_blank')">
+      ${p.fid?`<img src="https://drive.google.com/thumbnail?id=${p.fid}&sz=w200" onerror="this.style.display='none'">`
+             :`<div class="pthumb-empty">📷</div>`}
+      ${p.lat?`<div class="pthumb-geo">📍${Number(p.lat).toFixed(3)},${Number(p.lng).toFixed(3)}</div>`:''}
+      <button class="pthumb-del" onclick="event.stopPropagation();delPhoto('${type}',${i})">✕</button>
+    </div>`).join('');
+  h+=`<div class="add-more" onclick="pickFiles('${type}')">+</div>`;
+  return h;
+}
+
+async function delPhoto(type,idx){
+  if(!currWO||!currWO.photos[type]) return;
+  if(!confirm('Remove this photo from the list?')) return;
+  currWO.photos[type].splice(idx,1);
+  await saveData(); renderPhotos(); renderChecklist();
+  toast('🗑️ Photo removed from list (file remains in Drive)');
+}
+
+function renderChecklist(){
+  const w=currWO;
+  const bc=w.photos?.before?.length||0, ac=w.photos?.after?.length||0;
+  const items=[
+    {ok:bc>0, label:t('before_lbl')+' photos', val:`${bc} uploaded`},
+    {ok:ac>0, label:t('after_lbl')+' photos',  val:`${ac} uploaded`},
+    {ok:!!w.mo,   label:'MO Number', val:w.mo||'—'},
+    {ok:!!w.po,   label:'PO Number', val:w.po||'(optional)'},
+    {ok:!!w.area&&!!w.site, label:'Area & Station', val:`${w.area} — ${w.site}`},
+  ];
+  doc('checklist').innerHTML=items.map(i=>`
+    <div class="check-item">
+      <div class="check-ico">${i.ok?'✅':'⬜'}</div>
+      <div class="check-lbl" style="${i.ok?'':'color:var(--muted);'}">${i.label}</div>
+      <div class="check-val">${i.val}</div>
+    </div>`).join('');
+  const allOk=bc>0&&ac>0&&w.mo&&w.area&&w.site;
+  doc('drive-links').innerHTML=`
+    ${w.driveLink?`<a href="${w.driveLink}" target="_blank" class="drive-link">📂 Open Drive folder for this work order →</a>`:''}
+    ${allOk?`<div class="success-bar">✅ All ready! Open the Drive folder above and upload photos to MSCB billing portal.</div>`:''}
+  `;
+}
+
+// ============================================================
+// RENDER — BILL FILING
+// ============================================================
+function renderBill(){
+  const q=(doc('bsrch')?.value||'').toLowerCase();
+  const filtered=WOs.filter(w=>!q||[w.mo,w.po,w.area,w.site,w.workType].join(' ').toLowerCase().includes(q))
+    .sort((a,b)=>(a.status==='bill_ready'&&b.status!=='bill_ready')?-1:(b.status==='bill_ready'&&a.status!=='bill_ready')?1:0);
+  if(!filtered.length){
+    doc('bill-list').innerHTML='<div class="empty"><div class="empty-ico">🧾</div><div class="empty-txt">No work orders yet.</div></div>';
+    return;
+  }
+  const areas={};
+  filtered.forEach(w=>{ if(!areas[w.area]) areas[w.area]=[]; areas[w.area].push(w); });
+  doc('bill-list').innerHTML=Object.entries(areas).map(([area,wos])=>`
+    <div class="area-group">
+      <div class="area-label">📍 ${esc(area)}</div>
+      ${wos.map(w=>{
+        const bc=w.photos?.before?.length||0,ac=w.photos?.after?.length||0;
+        const rdy=w.status==='bill_ready';
+        return `<div class="bill-card ${rdy?'':'incomplete'}" onclick="openBillWO('${w.id}')">
+          <div class="bill-tag"><span class="badge ${rdy?'b-green':'b-orange'}">${rdy?t('bill_ready_badge'):t('inprog_badge')}</span></div>
+          <div style="font-family:var(--fh);font-size:16px;font-weight:600;padding-right:90px;">${esc(w.site)} — ${esc(w.workType)}</div>
+          <div style="font-family:var(--fm);font-size:11px;color:var(--muted);margin-top:3px;">${w.mo?'MO: '+esc(w.mo):'No MO'}${w.po?' | PO: '+esc(w.po):''} | 📅 ${w.date||'—'}</div>
+          <div style="font-family:var(--fm);font-size:11px;margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;">
+            <span style="color:var(--blue);">📷 Before: ${bc}</span>
+            <span style="color:var(--green);">📷 After: ${ac}</span>
+            ${bc>0&&ac>0?`<span style="color:var(--green);">✅ Photos OK</span>`:`<span style="color:var(--accent);">⚠️ Photos needed</span>`}
+          </div>
+          ${w.driveLink?`<div style="margin-top:8px;"><a href="${w.driveLink}" target="_blank" onclick="event.stopPropagation()" class="drive-link" style="font-size:11px;padding:7px 12px;">📂 Open Drive Folder →</a></div>`:''}
+        </div>`;
+      }).join('')}
+    </div>`).join('');
+}
+
+function openBillWO(id){ switchTab('work'); openWO(id); }
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab){
+  ['work','bill','guide'].forEach(t=>{
+    doc('tab-'+t).classList.toggle('on',t===tab);
+    doc('tab-'+t+'-content').classList.toggle('hidden',t!==tab);
+  });
+  if(tab==='bill') renderBill();
+}
+
+// ============================================================
+// FILE UPLOAD
+// ============================================================
+function pickFiles(type){ upType=type; doc('finput').click(); }
+async function onFilePick(e){
+  const files=Array.from(e.target.files); if(!files.length) return;
+  await uploadPhotos(files,upType); e.target.value='';
+}
+async function uploadPhotos(files,type){
+  let lat=null,lng=null;
+  try{
+    const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:6000,enableHighAccuracy:true}));
+    lat=pos.coords.latitude; lng=pos.coords.longitude;
+  }catch(e){}
+  const fid=type==='before'?currWO.driveBefore:currWO.driveAfter;
+  let ok=0;
+  toast(`⏳ Uploading ${files.length} photo(s)...`);
+  for(const file of files){
+    try{
+      const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+      const geo=lat?`_${lat.toFixed(5)}_${lng.toFixed(5)}`:'';
+      const fname=`${ts}${geo}_${type}_${file.name}`;
+      const r=await uploadFile(file,fname,fid);
+      if(!currWO.photos) currWO.photos={before:[],after:[]};
+      currWO.photos[type].push({fid:r.id,name:fname,link:r.webViewLink||'',lat,lng,ts:new Date().toISOString()});
+      ok++;
+    }catch(e){ console.error(e); }
+  }
+  await saveData(); renderPhotos(); renderChecklist();
+  toast(`✅ ${ok} photo(s) uploaded!`+(lat?' 📍 Geo-tagged.':''));
+}
+
+// ============================================================
+// DRAG & DROP
+// ============================================================
+function setupDnD(){
+  ['dz-before','dz-after'].forEach(id=>{
+    setTimeout(()=>{
+      const el=doc(id); if(!el) return;
+      const type=id==='dz-before'?'before':'after';
+      el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('ov');});
+      el.addEventListener('dragleave',()=>el.classList.remove('ov'));
+      el.addEventListener('drop',async e=>{
+        e.preventDefault();el.classList.remove('ov');
+        const fs=Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/')||f.type.startsWith('video/'));
+        if(!fs.length) return; upType=type; await uploadPhotos(fs,type);
+      });
+    },500);
+  });
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openNewWO(){
+  ['n-mo','n-po','n-area','n-site','n-desc','n-cont'].forEach(id=>{const e=doc(id);if(e)e.value='';});
+  doc('n-wtype').value=''; doc('n-date').value=today();
+  doc('modal-new').classList.remove('hidden');
+}
+function closeModal(){ doc('modal-new').classList.add('hidden'); }
+function closeModalIf(e){ if(e.target===doc('modal-new')) closeModal(); }
+
+// ============================================================
+// TOAST + UTIL
+// ============================================================
+let _tt;
+function toast(msg){ const t=doc('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(_tt); _tt=setTimeout(()=>t.style.display='none',3200); }
+function esc(s){ const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+</script>
+</body>
+</html>
